@@ -2,7 +2,11 @@
 use std::cell::Cell;
 #[cfg(not(test))]
 use std::sync::atomic::{AtomicU32, Ordering};
-use zcash_protocol::consensus::{BlockHeight, Network, NetworkType, NetworkUpgrade, Parameters};
+#[cfg(feature = "wcash")]
+use zcash_protocol::consensus::BranchId;
+#[cfg(not(feature = "wcash"))]
+use zcash_protocol::consensus::Network;
+use zcash_protocol::consensus::{BlockHeight, NetworkType, NetworkUpgrade, Parameters};
 
 // Keep ordinary regtest builds Orchard-only unless an Ironwood E2E explicitly
 // configures a controlled activation height.
@@ -28,6 +32,8 @@ pub fn configure_regtest_nu6_3_activation_height(height: u32) -> Result<(), Stri
     Ok(())
 }
 
+// Unused in wcash builds: Wcash regtest activates NU6.3 at height 1.
+#[cfg_attr(feature = "wcash", allow(dead_code))]
 fn regtest_nu6_3_activation_height() -> BlockHeight {
     #[cfg(not(test))]
     let height = REGTEST_NU6_3_ACTIVATION_HEIGHT.load(Ordering::SeqCst);
@@ -46,6 +52,9 @@ pub enum WalletNetwork {
 impl WalletNetwork {
     pub fn from_str(network: &str) -> Option<Self> {
         match network {
+            // Wcash mainnet is disabled upstream, so a wcash build refuses to
+            // select it: "main" falls through to `None`.
+            #[cfg(not(feature = "wcash"))]
             "main" => Some(Self::Main),
             "test" => Some(Self::Test),
             "regtest" => Some(Self::Regtest),
@@ -71,6 +80,25 @@ fn ironwood_masquerade_activation_height(nu: NetworkUpgrade) -> Option<BlockHeig
     Some(BlockHeight::from_u32(height))
 }
 
+/// Wcash launch networks activate the cumulative shielded upgrade set at
+/// height 1, mirroring zebra-chain's `new_wcash_testnet` / `new_wcash_regtest`
+/// (`ConfiguredActivationHeights { nu6_3: Some(1), .. }` is cumulative there).
+#[cfg(feature = "wcash")]
+fn wcash_activation_height(nu: NetworkUpgrade) -> Option<BlockHeight> {
+    match nu {
+        NetworkUpgrade::Overwinter
+        | NetworkUpgrade::Sapling
+        | NetworkUpgrade::Blossom
+        | NetworkUpgrade::Heartwood
+        | NetworkUpgrade::Canopy
+        | NetworkUpgrade::Nu5
+        | NetworkUpgrade::Nu6
+        | NetworkUpgrade::Nu6_1
+        | NetworkUpgrade::Nu6_2
+        | NetworkUpgrade::Nu6_3 => Some(BlockHeight::from_u32(1)),
+    }
+}
+
 impl Parameters for WalletNetwork {
     fn network_type(&self) -> NetworkType {
         match self {
@@ -80,6 +108,17 @@ impl Parameters for WalletNetwork {
         }
     }
 
+    #[cfg(feature = "wcash")]
+    fn activation_height(&self, nu: NetworkUpgrade) -> Option<BlockHeight> {
+        match self {
+            // Wcash mainnet is disabled upstream: no upgrade is ever active,
+            // so a `Main` wallet fails closed instead of using Zcash domains.
+            Self::Main => None,
+            Self::Test | Self::Regtest => wcash_activation_height(nu),
+        }
+    }
+
+    #[cfg(not(feature = "wcash"))]
     fn activation_height(&self, nu: NetworkUpgrade) -> Option<BlockHeight> {
         match self {
             #[cfg(ironwood_masquerade)]
@@ -100,6 +139,77 @@ impl Parameters for WalletNetwork {
                 NetworkUpgrade::Nu6_3 => Some(regtest_nu6_3_activation_height()),
             },
         }
+    }
+
+    /// Wcash's NU6.3 uses chain-specific signature and transaction-hash
+    /// domains that are distinct from Zcash NU6.3 while keeping its protocol
+    /// semantics (see wolf's `vendor/zcash_protocol/WCASH-PATCHES.md`).
+    #[cfg(feature = "wcash")]
+    fn branch_id_for_upgrade(&self, nu: NetworkUpgrade) -> BranchId {
+        if nu == NetworkUpgrade::Nu6_3 {
+            match self {
+                // Unreachable in practice: `Main` has no activation heights
+                // under wcash, so no branch is ever selected for it.
+                Self::Main => nu.branch_id(),
+                Self::Test => BranchId::WcashTestnetV1,
+                Self::Regtest => BranchId::WcashRegtestV1,
+            }
+        } else {
+            nu.branch_id()
+        }
+    }
+}
+
+#[cfg(all(test, feature = "wcash"))]
+mod wcash_tests {
+    use super::*;
+
+    #[test]
+    fn wcash_networks_expose_cumulative_shielded_activations_at_launch() {
+        let launch = Some(BlockHeight::from_u32(1));
+        for network in [WalletNetwork::Test, WalletNetwork::Regtest] {
+            assert_eq!(network.activation_height(NetworkUpgrade::Sapling), launch);
+            assert_eq!(network.activation_height(NetworkUpgrade::Nu5), launch);
+            assert_eq!(network.activation_height(NetworkUpgrade::Nu6_3), launch);
+        }
+    }
+
+    #[test]
+    fn wcash_networks_use_disjoint_wcash_transaction_domains() {
+        assert_eq!(
+            WalletNetwork::Test.branch_id_for_upgrade(NetworkUpgrade::Nu6_3),
+            BranchId::WcashTestnetV1
+        );
+        assert_eq!(
+            WalletNetwork::Regtest.branch_id_for_upgrade(NetworkUpgrade::Nu6_3),
+            BranchId::WcashRegtestV1
+        );
+        // Post-genesis heights select the Wcash domain, not Zcash NU6.3.
+        assert_eq!(
+            BranchId::for_height(&WalletNetwork::Test, BlockHeight::from_u32(1)),
+            BranchId::WcashTestnetV1
+        );
+        assert_eq!(
+            BranchId::for_height(&WalletNetwork::Regtest, BlockHeight::from_u32(100)),
+            BranchId::WcashRegtestV1
+        );
+    }
+
+    #[test]
+    fn wcash_build_rejects_mainnet() {
+        assert_eq!(WalletNetwork::from_str("main"), None);
+        assert_eq!(
+            WalletNetwork::Main.activation_height(NetworkUpgrade::Nu6_3),
+            None
+        );
+        assert!(matches!(
+            WalletNetwork::from_str("test"),
+            Some(WalletNetwork::Test)
+        ));
+        assert!(matches!(
+            WalletNetwork::from_str("regtest"),
+            Some(WalletNetwork::Regtest)
+        ));
     }
 }
 

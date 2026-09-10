@@ -1379,7 +1379,11 @@ mod tests {
 
     #[test]
     fn test_parse_network() {
+        // Wcash builds reject mainnet (disabled upstream); Zcash builds accept it.
+        #[cfg(not(feature = "wcash"))]
         assert!(matches!(parse_network("main"), Ok(WalletNetwork::Main)));
+        #[cfg(feature = "wcash")]
+        assert!(parse_network("main").is_err());
         assert!(matches!(parse_network("test"), Ok(WalletNetwork::Test)));
         assert!(matches!(
             parse_network("regtest"),

@@ -12,6 +12,8 @@ pub mod sync;
 pub mod sync_engine;
 pub(crate) mod transparent_receive_cache;
 pub mod voting;
+#[cfg(feature = "wcash")]
+pub mod wcash_address;
 pub(crate) mod wallet_summary_cache;
 
 const TRUSTED_CONFIRMATIONS: u32 = 3;

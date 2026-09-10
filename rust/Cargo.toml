@@ -6,6 +6,13 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+[features]
+# Builds the wallet for the Wcash chain (https://github.com/w-cash/wolf)
+# instead of Zcash. `WalletNetwork::Test` / `WalletNetwork::Regtest` become the
+# Wcash engineering Testnet / local Regtest transaction domains; `main` is
+# rejected because Wcash mainnet is disabled upstream.
+wcash = []
+
 [dependencies]
 flutter_rust_bridge = "=2.11.1"
 
@@ -71,6 +78,14 @@ log = "0.4"
 
 # Hex encoding
 hex = "0.4"
+
+# Wcash address namespace (feature "wcash"): src/wallet/wcash_address.rs.
+# All four are already in the graph transitively via zcash_address.
+bech32 = "0.11"
+bs58 = { version = "0.5", features = ["check"] }
+f4jumble = "0.1"
+thiserror = "1"
+zcash_encoding = "0.4"
 
 # Keystone hardware wallet
 ur = { git = "https://github.com/KeystoneHQ/ur-rs", tag = "0.3.3" }
@@ -152,6 +167,17 @@ rev = "c2119436f5246be05b1ba877a7e6b63f51c01339"
 package = "ur-registry"
 default-features = false
 features = ["std"]
+
+# Wcash port: the Wcash networks need chain-specific ZIP-200 transaction
+# domains (BranchId::WcashTestnetV1 / WcashRegtestV1) while retaining the
+# upstream Zcash NU6.3 domain. `vendor/zcash_protocol` is wolf's patched
+# upstream 0.10.5 (see its WCASH-PATCHES.md); `vendor/zakura-primitives` is
+# zakura-primitives 1.0.0 from crates.io with the same Wcash patch mirrored
+# (see its WCASH-PATCHES.md).
+[patch.crates-io]
+zcash_protocol = { path = "vendor/zcash_protocol" }
+zakura-primitives = { path = "vendor/zakura-primitives" }
+zakura-pczt = { path = "vendor/zakura-pczt" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 security-framework = { version = "3.7", features = ["OSX_10_15"] }

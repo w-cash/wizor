@@ -4496,9 +4496,12 @@ dependencies = [
  "aes",
  "aes-gcm",
  "base64 0.22.1",
+ "bech32",
  "bip0039",
+ "bs58",
  "bytes",
  "ed25519-consensus",
+ "f4jumble",
  "ff 0.14.0",
  "flutter_rust_bridge",
  "futures",
@@ -4530,6 +4533,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "tendermint-light-client-verifier",
+ "thiserror 1.0.69",
  "time",
  "tokio",
  "tonic",
@@ -4552,6 +4556,7 @@ dependencies = [
  "zakura-proofs",
  "zakura-sapling-crypto",
  "zcash_address",
+ "zcash_encoding",
  "zcash_note_encryption",
  "zcash_protocol",
  "zcash_script",
@@ -7998,8 +8003,6 @@ dependencies = [
 [[package]]
 name = "zakura-pczt"
 version = "0.1.0-rc2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fc78b3e1d6fe525d7e1a7fb17bc07bcc580a21f07ce1aa205cbc29b09f72d30"
 dependencies = [
  "blake2b_simd",
  "document-features",
@@ -8028,8 +8031,6 @@ dependencies = [
 [[package]]
 name = "zakura-primitives"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a5c71f57ec127e0429928795354ec3971fc58151603657a4a6f1ffd9f4e0d67"
 dependencies = [
  "blake2b_simd",
  "block-buffer 0.11.0-rc.3",
@@ -8222,8 +8223,6 @@ dependencies = [
 [[package]]
 name = "zcash_protocol"
 version = "0.10.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "314329b91ec4bbb517441840e47d0b2029bf0b946f086980c96c889c2d92dc5d"
 dependencies = [
  "corez",
  "document-features",

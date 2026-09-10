@@ -1,0 +1,108 @@
+[package]
+name = "zakura-primitives"
+description = "Rust implementations of the Zcash primitives"
+keywords = ["cryptography", "primitives", "transactions", "zcash"]
+categories = ["cryptography::cryptocurrencies"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lib]
+name = "zcash_primitives"
+bench = false
+
+[dependencies]
+blake2b_simd = { version = "1", default-features = false }
+# Not used directly: pins the pre-release RustCrypto stack pulled in by bip32
+# 0.6.0-pre.1 (via zcash_transparent/zcash_script) to versions known to
+# resolve together, since pre-release semver ranges do not unify reliably.
+# Remove once bip32 moves off pre-release digest/sha2.
+block-buffer = "=0.11.0-rc.3"
+corez = { version = "0.1.1", features = ["alloc"], default-features = false }
+# Not used directly: version pin, see block-buffer above.
+crypto-common = "=0.2.0-rc.1"
+document-features = { version = "0.2", optional = true }
+equihash = { version = "0.3", default-features = false }
+ff = { version = "0.14", default-features = false }
+hex = { version = "0.4", features = ["alloc"], default-features = false }
+incrementalmerkletree = { version = "0.8.2", features = ["legacy-api"], default-features = false }
+jubjub = { workspace = true, features = ["default"] }
+memuse = { version = "0.2.2", default-features = false }
+nonempty = { version = "0.11", default-features = false }
+orchard = { workspace = true }
+proptest = { version = ">=1,<1.7", optional = true }
+rand_core = { version = "0.10", default-features = false }
+redjubjub = { workspace = true }
+sapling = { workspace = true }
+secp256k1 = { version = "0.29", features = ["alloc"], optional = true, default-features = false }
+sha2 = { version = "0.10", default-features = false }
+transparent = { version = "0.10.0", default-features = false, package = "zcash_transparent" }
+zcash_encoding = { version = "0.4", default-features = false }
+zcash_note_encryption = { version = "0.4.1", features = ["pre-zip-212"] }
+zcash_protocol = { version = "0.10.0", default-features = false }
+zcash_script = { version = "0.4.3", default-features = false }
+
+[dev-dependencies]
+assert_matches = "1.5"
+bls12_381 = { workspace = true, features = ["default"] }
+chacha20poly1305 = "0.10"
+criterion = "0.5"
+incrementalmerkletree = { version = "0.8.2", features = ["legacy-api", "test-dependencies"], default-features = false }
+orchard = { workspace = true, features = ["test-dependencies"] }
+proptest = ">=1,<1.7"
+rand = "0.10"
+rand_xorshift = "0.5"
+sapling = { workspace = true, features = ["test-dependencies"] }
+transparent = { version = "0.10.0", features = ["test-dependencies"], default-features = false, package = "zcash_transparent" }
+zcash_protocol = { version = "0.10.0", features = ["local-consensus", "test-dependencies"], default-features = false }
+zip32 = { version = "0.2", default-features = false }
+
+[target."cfg(unix)".dev-dependencies]
+pprof = { version = "0.15", features = ["criterion", "flamegraph"] }
+
+[features]
+circuits = ["orchard/circuit", "sapling/circuit"]
+default = ["multicore", "std", "circuits"]
+expensive-tests = []
+multicore = ["orchard/multicore", "sapling/multicore"]
+no-expensive-tests = []
+non-standard-fees = []
+std = [
+    "document-features",
+    "redjubjub/std",
+    "sapling/std",
+    "orchard/std",
+    "transparent/std",
+]
+temporary-zcashd = []
+test-dependencies = [
+    "dep:proptest",
+    "incrementalmerkletree/test-dependencies",
+    "orchard/test-dependencies",
+    "sapling/test-dependencies",
+    "transparent/test-dependencies",
+    "zcash_protocol/test-dependencies",
+]
+transparent-inputs = ["transparent/transparent-inputs", "dep:secp256k1"]
+zip-233 = []
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+priority = 0
+check-cfg = [
+    "cfg(tokio_unstable)",
+    'cfg(zcash_unstable, values("nu7"))',
+    "cfg(live_network_tests)",
+]
+
+[[bench]]
+name = "note_decryption"
+harness = false
