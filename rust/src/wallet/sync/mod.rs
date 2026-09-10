@@ -490,6 +490,35 @@ pub enum AddressValidation {
     WrongNetwork { address_type: String },
 }
 
+/// Validate a Wcash recipient address for `network`.
+///
+/// The Wcash namespace has distinct per-network encodings for every address
+/// kind (including transparent), so network matching is an exact comparison.
+/// Zcash textual addresses fail to parse (`NotWcash`) and surface as the
+/// `Err` outcome.
+#[cfg(feature = "wcash")]
+pub fn validate_address(
+    address: &str,
+    network: WalletNetwork,
+) -> Result<AddressValidation, String> {
+    use crate::wallet::wcash_address::{WcashAddress, WcashAddressKind};
+    use zcash_protocol::consensus::Parameters;
+
+    let parsed = WcashAddress::try_from_encoded(address).map_err(|e| format!("Invalid: {e}"))?;
+    let address_type = match parsed.kind() {
+        WcashAddressKind::Unified(_) => "unified",
+        WcashAddressKind::P2pkh(_) | WcashAddressKind::P2sh(_) => "transparent",
+        WcashAddressKind::Tex(_) => "tex",
+    }
+    .to_string();
+
+    if parsed.network() == network.network_type() {
+        Ok(AddressValidation::Valid { address_type })
+    } else {
+        Ok(AddressValidation::WrongNetwork { address_type })
+    }
+}
+
 /// Validate a recipient address for `network`.
 ///
 /// Network matching is delegated entirely to
@@ -498,6 +527,7 @@ pub enum AddressValidation {
 /// testnet and regtest, so a `tm…` address is accepted while running on
 /// regtest. Sapling, unified and TEX encodings have distinct per-network
 /// prefixes and must match exactly. Nothing here adds prefix logic of its own.
+#[cfg(not(feature = "wcash"))]
 pub fn validate_address(
     address: &str,
     network: WalletNetwork,

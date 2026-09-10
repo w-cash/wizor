@@ -776,7 +776,7 @@ pub(crate) fn propose_send(
         let account_id = parse_account_uuid(account_uuid)?;
         let proposed_tx_version =
             proposed_tx_version_for_wallet_db(&db, network, "creating a send")?;
-        let request = build_send_request(to_address, amount_zatoshi, memo_str)?;
+        let request = build_send_request(network, to_address, amount_zatoshi, memo_str)?;
         let migration_locks = super::migration::locked_migration_note_refs(db_path, account_uuid)?;
         let spend_policy = ordinary_send_spend_policy(
             super::migration::migration_reserves_orchard_inputs(db_path, account_uuid, network)?,
@@ -795,7 +795,7 @@ pub(crate) fn propose_send(
             pass1_proposal,
             proposed_tx_version,
             |tx_version| {
-                let request = build_send_request(to_address, amount_zatoshi, memo_str)?;
+                let request = build_send_request(network, to_address, amount_zatoshi, memo_str)?;
                 propose_send_with_reserved_notes(
                     &db,
                     network,
@@ -910,7 +910,7 @@ pub fn estimate_fee(
     let account_id = parse_account_uuid(account_uuid)?;
     let proposed_tx_version =
         proposed_tx_version_for_wallet_db(&db, network, "estimating a send fee")?;
-    let request = build_send_request(to_address, amount_zatoshi, memo_str)?;
+    let request = build_send_request(network, to_address, amount_zatoshi, memo_str)?;
     let migration_locks = super::migration::locked_migration_note_refs(db_path, account_uuid)?;
     let spend_policy = ordinary_send_spend_policy(
         super::migration::migration_reserves_orchard_inputs(db_path, account_uuid, network)?,
@@ -929,7 +929,7 @@ pub fn estimate_fee(
     // the stored proposal's fee.
     let (proposal, _) =
         propose_with_note_version_downgrade(pass1_proposal, proposed_tx_version, |tx_version| {
-            let request = build_send_request(to_address, amount_zatoshi, memo_str)?;
+            let request = build_send_request(network, to_address, amount_zatoshi, memo_str)?;
             propose_send_with_reserved_notes(
                 &db,
                 network,
@@ -3301,13 +3301,13 @@ fn build_shielding_proposal(
 }
 
 fn build_send_request(
+    network: WalletNetwork,
     to_address: &str,
     amount_zatoshi: u64,
     memo_str: Option<&str>,
 ) -> Result<TransactionRequest, String> {
-    let to: zcash_address::ZcashAddress = to_address
-        .parse()
-        .map_err(|e| format!("Bad address: {e}"))?;
+    let to: zcash_address::ZcashAddress =
+        crate::wallet::address_codec::parse_recipient(to_address, network)?;
     let value = Zatoshis::from_u64(amount_zatoshi).map_err(|_| "Bad amount")?;
     let memo_bytes = match memo_str {
         Some(m) => {
@@ -3746,9 +3746,8 @@ fn build_send_max_proposal(
     memo_str: Option<&str>,
     spend_pools: &[ShieldedPool],
 ) -> Result<Proposal<WalletFeeRule, <WalletDatabase as InputSource>::NoteRef>, String> {
-    let to: zcash_address::ZcashAddress = to_address
-        .parse()
-        .map_err(|e| format!("Bad address: {e}"))?;
+    let to: zcash_address::ZcashAddress =
+        crate::wallet::address_codec::parse_recipient(to_address, network)?;
     let recipient_address: Address = to
         .clone()
         .convert_if_network(network.network_type())

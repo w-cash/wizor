@@ -13,12 +13,11 @@ use zcash_client_backend::data_api::{
     WalletWrite, Zip32Derivation,
 };
 use zcash_client_sqlite::{error::SqliteClientError, wallet::init::init_wallet_db, AccountUuid};
-use zcash_keys::{
-    encoding::encode_transparent_address,
-    keys::{ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
+use zcash_keys::keys::{
+    ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey,
 };
 use zcash_primitives::block::BlockHash;
-use zcash_protocol::consensus::{BlockHeight, NetworkConstants, NetworkUpgrade, Parameters};
+use zcash_protocol::consensus::{BlockHeight, NetworkUpgrade, Parameters};
 use zeroize::{Zeroize, Zeroizing};
 use zip32::fingerprint::SeedFingerprint;
 
@@ -268,7 +267,7 @@ pub fn derive_software_address(
     let (ua, _di) = ufvk
         .default_address(shielded_address_request())
         .map_err(|e| format!("Failed to derive address: {e}"))?;
-    Ok(ua.encode(&network))
+    super::address_codec::encode_unified_address(&ua, network)
 }
 
 /// Return the transparent receiver at `m/44'/coin_type'/account'/0/0`.
@@ -288,10 +287,8 @@ pub fn software_account_first_external_transparent_address(
         .derive_address(NonHardenedChildIndex::ZERO)
         .map_err(|e| format!("Failed to derive transparent address index 0: {e}"))?;
 
-    Ok(encode_transparent_address(
-        &network.b58_pubkey_address_prefix(),
-        &network.b58_script_address_prefix(),
-        &taddr,
+    Ok(super::address_codec::encode_transparent_address(
+        &taddr, network,
     ))
 }
 
@@ -321,19 +318,17 @@ pub fn software_account_transparent_addresses(
         let external_taddr = external_ivk
             .derive_address(child_index)
             .map_err(|e| format!("Failed to derive transparent external address {i}: {e}"))?;
-        addresses.push(encode_transparent_address(
-            &network.b58_pubkey_address_prefix(),
-            &network.b58_script_address_prefix(),
+        addresses.push(super::address_codec::encode_transparent_address(
             &external_taddr,
+            network,
         ));
 
         let internal_taddr = internal_ivk
             .derive_address(child_index)
             .map_err(|e| format!("Failed to derive transparent internal address {i}: {e}"))?;
-        addresses.push(encode_transparent_address(
-            &network.b58_pubkey_address_prefix(),
-            &network.b58_script_address_prefix(),
+        addresses.push(super::address_codec::encode_transparent_address(
             &internal_taddr,
+            network,
         ));
     }
 
@@ -375,7 +370,10 @@ fn import_ufvk_account(
         Ok::<_, String>(account.id())
     })?;
 
-    Ok((account_id.expose_uuid().to_string(), ua.encode(&network)))
+    Ok((
+        account_id.expose_uuid().to_string(),
+        super::address_codec::encode_unified_address(&ua, network)?,
+    ))
 }
 
 /// Add an additional account (from a different seed) to the wallet database.
@@ -464,7 +462,7 @@ pub fn import_hardware_account(
         .map_err(|e| format!("Failed to derive address: {e}"))?;
 
     let uuid_str = account_id.expose_uuid().to_string();
-    let addr_str: String = ua.encode(&network);
+    let addr_str: String = super::address_codec::encode_unified_address(&ua, network)?;
     log::info!(
         "Imported hardware account: uuid={}, address={}",
         uuid_str,
@@ -503,7 +501,10 @@ pub fn init_db_and_create_account(
         .map_err(|e| format!("Failed to derive address: {e}"))?;
 
     let uuid_str = account_id.expose_uuid().to_string();
-    Ok((uuid_str, ua.encode(&network)))
+    Ok((
+        uuid_str,
+        super::address_codec::encode_unified_address(&ua, network)?,
+    ))
 }
 
 /// Import a same-seed software account for a specific ZIP32 account index as a
@@ -531,7 +532,10 @@ pub fn import_derived_account_at_index(
             .map_err(|e| format!("Failed to import derived account: {e}"))
     })?;
 
-    Ok((account.id().expose_uuid().to_string(), ua.encode(&network)))
+    Ok((
+        account.id().expose_uuid().to_string(),
+        super::address_codec::encode_unified_address(&ua, network)?,
+    ))
 }
 
 pub struct AccountInfo {
@@ -1072,7 +1076,7 @@ fn current_receive_address(
         }
     };
 
-    Ok(address.encode(&network))
+    super::address_codec::encode_unified_address(&address, network)
 }
 
 fn is_keystone_style_ufvk(ufvk: &UnifiedFullViewingKey) -> bool {
@@ -1081,6 +1085,7 @@ fn is_keystone_style_ufvk(ufvk: &UnifiedFullViewingKey) -> bool {
 
 /// Returns the standard shielded address request (Orchard + Sapling, no transparent).
 /// This matches the behavior of zodl/Zashi wallets.
+#[cfg(not(feature = "wcash"))]
 fn shielded_address_request() -> UnifiedAddressRequest {
     UnifiedAddressRequest::custom(
         ReceiverRequirement::Require, // Orchard
@@ -1088,6 +1093,13 @@ fn shielded_address_request() -> UnifiedAddressRequest {
         ReceiverRequirement::Omit,    // Transparent
     )
     .expect("valid receiver requirements")
+}
+
+/// Wcash has no Sapling pool and its Unified Addresses reject Sapling
+/// receivers, so the standard shielded request is Orchard/Ironwood-only.
+#[cfg(feature = "wcash")]
+fn shielded_address_request() -> UnifiedAddressRequest {
+    orchard_address_request()
 }
 
 /// Returns an Orchard-only address request for hardware wallets.

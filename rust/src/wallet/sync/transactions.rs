@@ -213,7 +213,7 @@ pub fn get_next_available_address(
             .map_err(|e| format!("{e}"))?
             .ok_or_else(|| "No address available".to_string())
     })?;
-    Ok(ua.encode(&network))
+    crate::wallet::address_codec::encode_unified_address(&ua, network)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -293,8 +293,10 @@ pub(crate) fn get_transaction_data_requests(
                 block_range_end: None,
             },
             TransactionDataRequest::TransactionsInvolvingAddress(req) => {
-                let addr =
-                    zcash_keys::encoding::encode_transparent_address_p(&network, &req.address());
+                let addr = crate::wallet::address_codec::encode_transparent_address(
+                    &req.address(),
+                    network,
+                );
                 TxDataRequest {
                     request_type: "address_txids".into(),
                     txid: None,
@@ -935,8 +937,8 @@ fn transparent_source_address_from_script_sig(
 ) -> Option<String> {
     let pubkey = parse_standard_p2pkh_pubkey_from_script_sig(script_sig)?;
     let address = TransparentAddress::PublicKeyHash(transparent::util::hash160::hash(pubkey));
-    Some(zcash_keys::encoding::encode_transparent_address_p(
-        &network, &address,
+    Some(crate::wallet::address_codec::encode_transparent_address(
+        &address, network,
     ))
 }
 

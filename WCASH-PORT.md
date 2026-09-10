@@ -71,14 +71,29 @@ transparent Base58 prefixes.
   `encode_wallet_unified_address`, `encode_wallet_transparent_address`,
   `decode_wallet_address` (fail-closed: rejects the Zcash namespace and
   cross-network Wcash addresses).
-- TODO: sweep Vizor call sites to route through the boundary helpers under
-  the feature. Production sites found so far: `keys.rs` (`ua.encode(&network)`
-  at 271/378/467/506/534, `ufvk.encode` 654/1043, `address.encode` 1075),
-  `sync/transactions.rs:216`, recipient parsing in `sync/mod.rs:509`
-  (`ZcashAddress::try_from_encoded`). UFVK/UIVK encodings (`uview…`) keep the
-  Zcash namespace for now — wolf does not define a Wcash namespace for them.
+- DONE: `rust/src/wallet/address_codec.rs` — the chain-flavor codec facade
+  (`encode_unified_address`, `encode_transparent_address`,
+  `parse_recipient`), and the call-site sweep through it: every UA/transparent
+  display+derive encode in `keys.rs`, `sync/transactions.rs` (including the
+  `TransactionsInvolvingAddress` enhancement request string), recipient
+  parsing in `send.rs` (`build_send_request`, `build_send_max_proposal`), and
+  a Wcash variant of `validate_address` in `sync/mod.rs`. Under the feature,
+  `shielded_address_request()` is Orchard/Ironwood-only (Wcash UAs reject
+  Sapling receivers).
+- Still Zcash-namespace by design/for now:
+  - UFVK/UIVK encodings (`uview…`) — wolf defines no Wcash namespace for
+    viewing keys (`keys.rs:654/1043`);
+  - librustzcash-internal transparent address strings on the
+    `GetAddressUtxos` RPC path (`sync_engine/mod.rs`, transparent receive
+    cache) — needs the phase-2 transport-boundary rewrite that
+    `wcash-wallet`'s `WcashNamespaceService` implements.
 - TODO (Dart): QR display and `bech32.dart` address validation must accept
-  the Wcash prefixes in the wcash flavor.
+  the Wcash prefixes in the wcash flavor; payment URIs are parsed on the
+  Dart side and need the same treatment.
+- Test lanes: the default lane (`cargo test --lib`) stays the full-suite
+  regression gate. The wcash lane currently runs the targeted filters
+  (`cargo test --features wcash --lib wcash` and `… address_codec`); most
+  legacy tests assert Zcash encodings/`Main` and are not yet wcash-aware.
 
 ## Phase 2 — sync/RPC against a wcash node (TODO)
 
