@@ -161,9 +161,9 @@ pub(super) async fn run_enhancement(
                         Some(h) => h,
                         None => continue,
                     };
-                    let addr_str = zcash_keys::encoding::encode_transparent_address_p(
-                        &network,
+                    let addr_str = crate::wallet::address_codec::encode_transparent_address(
                         &req.address(),
+                        network,
                     );
                     let start = u32::from(req.block_range_start()) as u64;
                     let end = u32::from(end_height) as u64;

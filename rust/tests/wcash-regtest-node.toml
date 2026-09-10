@@ -1,0 +1,36 @@
+# Loopback-only wcash-zebrad regtest profile for Vizor's Wcash E2E
+# (tests/wcash_regtest_sync.rs). Never use this file for a public node.
+#
+# The miner address is the deterministic Ironwood receiver of the public
+# test-only mnemonic embedded in the test (BIP-39 "abandon … about"), so every
+# internally mined block funds the test wallet privately.
+
+[network]
+network = "WcashRegtest"
+listen_addr = "127.0.0.1:58233"
+initial_mainnet_peers = []
+initial_testnet_peers = []
+cache_dir = false
+peerset_initial_target_size = 1
+max_connections_per_ip = 1
+
+[state]
+ephemeral = true
+
+[rpc]
+listen_addr = "127.0.0.1:58232"
+lightwalletd_listen_addr = "127.0.0.1:58234"
+enable_cookie_auth = false
+# Isolated regtest has no public peers. This bypass is unsafe on public networks.
+debug_force_finished_sync = true
+
+[mempool]
+debug_enable_at_height = 0
+
+[mining]
+miner_address = "wuregtest1de8nt40l5457cv5s565m6kn543wxvh06kf46xnfeg6wv9q824emvluvkuuqn8c7u40c0vup4avryvqp76f8pqakawmluqzaug53829az"
+extra_coinbase_data = "VizorWcashE2E"
+internal_miner = true
+
+[tracing]
+filter = "info"

@@ -1243,11 +1243,18 @@ fn transparent_address_for_query(
     query_network: WalletNetwork,
 ) -> Result<String, String> {
     if source_network == query_network {
-        return Ok(address.to_string());
+        // DB-cached strings are always Zcash-encoded; the codec re-encodes
+        // them for the node's namespace (a no-op in the default flavor).
+        return crate::wallet::address_codec::reencode_cached_transparent_address(
+            address,
+            query_network,
+        );
     }
 
     TransparentAddress::decode(&source_network, address)
-        .map(|address| address.encode(&query_network))
+        .map(|address| {
+            crate::wallet::address_codec::encode_transparent_address(&address, query_network)
+        })
         .map_err(|e| format!("decode transparent address {address}: {e}"))
 }
 
@@ -1412,7 +1419,9 @@ async fn refresh_utxos(
             .map_err(|e| SyncError::db(format!("get_transparent_receivers: {e}")))?
             .into_iter()
             .filter(|(_, metadata)| metadata.scope() != Some(TransparentKeyScope::EXTERNAL))
-            .map(|(addr, _)| addr.encode(&query_network))
+            .map(|(addr, _)| {
+                crate::wallet::address_codec::encode_transparent_address(&addr, query_network)
+            })
             .filter(|addr| !external_selected.contains(addr.as_str()))
             .collect();
 

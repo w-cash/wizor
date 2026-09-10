@@ -95,20 +95,43 @@ transparent Base58 prefixes.
   (`cargo test --features wcash --lib wcash` and `… address_codec`); most
   legacy tests assert Zcash encodings/`Main` and are not yet wcash-aware.
 
-## Phase 2 — sync/RPC against a wcash node (TODO)
+## Phase 2 — sync/RPC against a wcash node (in progress)
 
-- Endpoint config: point the gRPC channel at a wcash `zebrad` with the
-  lightwalletd interface enabled (no public Testnet infra exists — regtest via
-  wolf's docker profiles, or a self-hosted node).
-- Mirror `wcash-wallet`'s `WcashNamespaceService` if/when the transparent
-  `GetAddressUtxos` path is used: it rewrites synchronizer-generated
-  transparent address strings between the Zcash and Wcash namespaces at the
-  transport boundary.
-- Optional hardening from `AttestedWcashClient`: verify server identity /
-  genesis before trusting a node.
-- E2E: replace `scripts/regtest/` (zcashd+lightwalletd docker) with a wcash
-  regtest stack (`wolf/docker`, `wcash-local.toml`), then run the existing
-  regtest suites.
+- DONE: transparent RPC namespace at the source instead of a transport
+  rewriter. Unlike `wcash-wallet` (whose sync lives inside
+  `zcash_client_backend` and needs `WcashNamespaceService` on the wire),
+  Vizor's sync engine is custom, so every RPC-facing address string is owned
+  by us and now goes through `address_codec`:
+  `transparent_address_for_query` re-encodes DB-cached Zcash strings
+  (`reencode_cached_transparent_address`), the non-external receiver list and
+  the enhancement `TransactionsInvolvingAddress` filter encode typed
+  receivers directly. UTXO replies are consumed via txid/script only — no
+  response rewriting needed.
+- DONE: E2E harness against a real wcash node:
+  - `rust/tests/wcash-regtest-node.toml` — loopback wcash-zebrad regtest
+    profile (RPC 58232, lightwalletd gRPC 58234, `internal_miner = true`
+    paying every coinbase privately to the test wallet's Ironwood receiver).
+  - `rust/tests/wcash_regtest_sync.rs` — `#[ignore]`d tests: derive the
+    deterministic miner UA; sync against the node and assert the Ironwood
+    coinbase balance and history are detected. The node build recipe is in
+    the test header (wolf: `--features wcash-consensus,internal-miner`).
+- macOS note: if C++ deps (rocksdb, zcash_script) fail with
+  `'algorithm' file not found`, the CommandLineTools libc++ headers are
+  missing; build with
+  `CXXFLAGS="-isystem $(xcrun --show-sdk-path)/usr/include/c++/v1"`
+  (proper fix: reinstall CLT).
+- VERIFIED (2026-09-10, local run): against a wcash-zebrad regtest node with
+  the internal miner (genesis `70bf0bab…`),
+  `wcash_regtest_sync_detects_ironwood_coinbase` synced to tip and detected
+  16 private Ironwood coinbases (100 TWC total, Sapling/transparent 0), and
+  `wcash_regtest_send_between_wallets` completed a full transfer round trip:
+  propose (fee 10000 zat) → sign in the Wcash sighash domain → broadcast
+  accepted by the node → mined into the active chain (verified via
+  `getrawtransaction … in_active_chain: true`) → recipient wallet detected
+  the 1 TWC Ironwood note; sender history shows the outbound transfer.
+- TODO: optional node hardening from `AttestedWcashClient` (verify server
+  identity/genesis before trusting a node); wire the endpoint into the Dart
+  settings once phase 3 starts.
 
 ## Phase 3 — Dart flavor: product surface (TODO)
 

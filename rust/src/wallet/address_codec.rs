@@ -54,6 +54,30 @@ pub(crate) fn encode_transparent_address(
     super::wcash_address::encode_wallet_transparent_address(address, network.network_type())
 }
 
+/// Re-encodes a transparent address string that librustzcash cached in the
+/// wallet DB (always the Zcash namespace) for use in node RPC requests.
+#[cfg(not(feature = "wcash"))]
+pub(crate) fn reencode_cached_transparent_address(
+    address: &str,
+    _network: WalletNetwork,
+) -> Result<String, String> {
+    Ok(address.to_string())
+}
+
+/// Re-encodes a DB-cached Zcash-namespace transparent address string into the
+/// Wcash namespace the node expects.
+#[cfg(feature = "wcash")]
+pub(crate) fn reencode_cached_transparent_address(
+    address: &str,
+    network: WalletNetwork,
+) -> Result<String, String> {
+    use zcash_keys::encoding::AddressCodec as _;
+
+    TransparentAddress::decode(&network, address)
+        .map(|address| encode_transparent_address(&address, network))
+        .map_err(|e| format!("re-encode cached transparent address {address}: {e}"))
+}
+
 /// Parses a recipient string into the `ZcashAddress` container consumed by
 /// `TransactionRequest` and the librustzcash send stack.
 #[cfg(not(feature = "wcash"))]
