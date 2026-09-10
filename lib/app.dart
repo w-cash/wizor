@@ -131,6 +131,17 @@ Future<void> initializeZcashWalletRuntime() async {
   WidgetsFlutterBinding.ensureInitialized();
   log('runtime: initializing RustLib');
   await RustLib.init();
+  // A mixed-flavor build (Dart for one chain, Rust for the other) would sign
+  // transactions in the wrong chain domain — refuse to run, release included.
+  if (rust_simple.isWcashBuild() != kWcashChain) {
+    throw StateError(
+      'Chain flavor mismatch: Dart is built for '
+      '${kWcashChain ? 'wcash' : 'zcash'} but the Rust library is built for '
+      '${rust_simple.isWcashBuild() ? 'wcash' : 'zcash'}. Pass '
+      '--dart-define=VIZOR_CHAIN=wcash AND export VIZOR_CHAIN=wcash (Cargokit '
+      'reads the environment variable) or neither.',
+    );
+  }
   log('runtime: applying network privacy policy');
   await initializeNetworkPrivacyRuntime();
   await rust_simple.configureFastTestnetMigration(

@@ -9,6 +9,8 @@ import '../../../../core/widgets/decimal_amount_input_formatter.dart';
 import '../../../swap/models/swap_models.dart';
 import '../../../swap/widgets/swap_asset_icon.dart';
 import '../../models/pay_amount_input.dart';
+import '../../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 const _amountCardHeight = 240.0;
 const _amountCardRadius = 28.0;
@@ -482,7 +484,7 @@ class _EstimatedZecRow extends StatelessWidget {
             ),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            'ZEC',
+            kZcashDefaultCurrencyTicker,
             style: AppTypography.labelLarge.copyWith(
               color: colors.text.secondary,
             ),

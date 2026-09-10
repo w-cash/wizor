@@ -16,6 +16,15 @@ pub fn init_app() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 
+/// Whether this Rust library was compiled for the Wcash chain
+/// (cargo feature `wcash`). App bootstrap asserts this matches the Dart
+/// `VIZOR_CHAIN` define so a mixed-flavor build fails fast instead of
+/// signing transactions in the wrong chain domain.
+#[flutter_rust_bridge::frb(sync)]
+pub fn is_wcash_build() -> bool {
+    cfg!(feature = "wcash")
+}
+
 /// Keep wallet consensus parameters aligned with the local Ironwood regtest
 /// node. Production builds leave the default activation-at-height-1 behavior.
 pub fn configure_regtest_ironwood_activation_height(height: u32) -> Result<(), String> {

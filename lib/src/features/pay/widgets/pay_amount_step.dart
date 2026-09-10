@@ -10,6 +10,8 @@ import '../../../core/widgets/decimal_amount_input_formatter.dart';
 import '../../swap/models/swap_models.dart';
 import '../../swap/widgets/swap_asset_icon.dart';
 import '../models/pay_amount_input.dart';
+import '../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 const _payAmountSkeletonPeriod = Duration(milliseconds: 1200);
 
@@ -295,7 +297,7 @@ class PayAmountStep extends StatelessWidget {
                                 ),
                               ),
                             Text(
-                              'ZEC',
+                              kZcashDefaultCurrencyTicker,
                               style: AppTypography.labelLarge.copyWith(
                                 fontWeight: FontWeight.w400,
                                 color: colors.text.secondary,
@@ -312,7 +314,7 @@ class PayAmountStep extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
-                        'ZEC',
+                        kZcashDefaultCurrencyTicker,
                         style: AppTypography.labelLarge.copyWith(
                           color: colors.text.accent,
                         ),

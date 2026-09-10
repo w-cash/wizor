@@ -150,7 +150,17 @@ class RustBuilder {
 
   /// Returns the path of directory containing build artifacts.
   Future<String> build() async {
-    final extraArgs = _buildOptions?.flags ?? [];
+    // Vizor chain flavor: VIZOR_CHAIN=wcash in the process environment builds
+    // the Rust library for the Wcash chain. It must be paired with
+    // --dart-define=VIZOR_CHAIN=wcash; app bootstrap asserts the two agree.
+    final chain = Platform.environment['VIZOR_CHAIN'];
+    if (chain != null && chain.isNotEmpty && chain != 'zcash' && chain != 'wcash') {
+      throw StateError('VIZOR_CHAIN must be "zcash" or "wcash", got "$chain".');
+    }
+    final extraArgs = [
+      ...?_buildOptions?.flags,
+      if (chain == 'wcash') ...['--features', 'wcash'],
+    ];
     final manifestPath = path.join(environment.manifestDir, 'Cargo.toml');
     runCommand(
       'rustup',

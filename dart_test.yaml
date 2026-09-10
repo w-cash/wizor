@@ -8,6 +8,11 @@ tags:
   # See "Design Token Form Factor" in AGENTS.md.
   mobile:
     skip: "mobile token lane only: fvm flutter test --tags mobile --run-skipped --dart-define=VIZOR_FORM_FACTOR=mobile"
+  # Wcash chain-flavor tests are opt-in: skipped in the default (Zcash) lane,
+  # re-enabled by the wcash lane command in the skip reason below.
+  # See WCASH-PORT.md.
+  wcash:
+    skip: "wcash chain lane only: fvm flutter test --tags wcash --run-skipped --dart-define=VIZOR_CHAIN=wcash"
   # Probes that talk to the live Tor network from a booted device. They cost
   # minutes, depend on a network nobody controls, and leave the process
   # Tor-enabled and fail-closed for anything sharing the binary, so they stay

@@ -133,22 +133,49 @@ transparent Base58 prefixes.
   identity/genesis before trusting a node); wire the endpoint into the Dart
   settings once phase 3 starts.
 
-## Phase 3 — Dart flavor: product surface (TODO)
+## Phase 3 — Dart flavor: product surface (core DONE)
 
-- Tickers/copy: ZEC → WEC (mainnet) / TWC (testing networks), 8 decimal
-  places unchanged. `network_config.dart`, formatting, explorer config.
-- Default network: `test` (Wcash testnet); hide/reject mainnet selection.
-- Disable Zcash-only features for the flavor: swap (ZEC swap deposits),
-  voting, payment links/gift cards (`link.vizor.cash`), Ironwood *migration*
-  UI (Wcash has no legacy Orchard pool to migrate from — the chain launches
-  Ironwood-native).
-- Keystone hardware flow stays disabled for wcash: the device firmware
-  computes Zcash-domain sighashes; Wcash-domain signing requires a firmware
-  update. (`zakura-pczt` is patched so software PCZT paths still work.)
-- Branding (name, icons, deep-link host) — product decision, not started.
-- Build plumbing: Cargokit must pass `--features wcash` when the Dart flavor
-  is selected (pair with a `VIZOR_CHAIN=wcash` dart-define, mirroring the
-  `VIZOR_FORM_FACTOR` pattern).
+The flavor knob is `--dart-define=VIZOR_CHAIN=wcash` (`kWcashChain` in
+`lib/src/core/config/network_config.dart`), paired with the `VIZOR_CHAIN`
+process environment variable that Cargokit reads to add `--features wcash`
+to the Rust build (`rust_builder/cargokit/build_tool/lib/src/builder.dart`,
+same pattern as the existing `VIZOR_RUST_TOOLCHAIN` hook). App bootstrap
+calls the new sync FRB API `is_wcash_build()` and refuses to run a
+mixed-flavor binary (`lib/app.dart`).
+
+- DONE `network_config.dart`: WEC/TWC tickers, `wu…`/`wutest…`/W* address
+  prefixes (`tAddrPrefixes` now carries both Base58 prefixes per network),
+  Sapling declared unsupported (`supportsSaplingRecipients`), localhost
+  lightwalletd defaults (`127.0.0.1:58234`, matching
+  `rust/tests/wcash-regtest-node.toml` — Wcash has no public infra),
+  `saplingActivationHeight = 1`, `"main"` normalizes to `test` (mainnet is
+  disabled upstream), and wcash secure stores live under
+  `com.keplr.vizor.wcash.<network>.secure_store` so they can never collide
+  with Zcash wallets.
+- DONE address book validation flows from the config (accepts Wcash UAs,
+  W-prefix transparent, rejects Zcash encodings and all Sapling recipients).
+- DONE hardcoded `'ZEC'` unit labels in send/pay/receive amount fields now
+  use `kZcashDefaultCurrencyTicker` (donation/voting/gift-card literals left:
+  those features are Zcash-only and gated off below).
+- DONE feature gates under `kWcashChain`: coinholder voting
+  (`votingHomeEntryVisibleProvider` + desktop sidebar item), Keystone
+  onboarding entries (desktop welcome + mobile method selection; the device
+  firmware signs Zcash-domain sighashes), payment links
+  (`VizorPaymentLink.supportsNetwork`). Swap is already mainnet-only, so it
+  is off by construction.
+- Test lanes: `wcash` tag in `dart_test.yaml` mirroring the mobile lane;
+  `test/core/config/wcash_chain_flavor_test.dart` runs via
+  `fvm flutter test --tags wcash --run-skipped --dart-define=VIZOR_CHAIN=wcash`.
+- TODO: mobile voting deep entries beyond the home card, Ironwood-migration
+  surfaces (dormant on wcash — no legacy Orchard balance can exist — but not
+  explicitly gated), explorer default (still CipherScan; no Wcash explorer
+  exists), branding (name/icons/deep-link host), donation flow.
+- Verification ceiling on this machine: `fvm flutter analyze` + full Dart
+  suite + the wcash test lane. No Xcode / Android SDK is installed, so an
+  actual app build (and therefore the Cargokit `VIZOR_CHAIN` hook) has not
+  been exercised end-to-end; run
+  `export VIZOR_CHAIN=wcash && fvm flutter run --dart-define=VIZOR_CHAIN=wcash --dart-define=ZCASH_DEFAULT_NETWORK=regtest`
+  on a machine with the platform toolchains.
 
 ## Open questions
 

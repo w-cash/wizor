@@ -45,6 +45,8 @@ import '../../services/send_proving_key_warmup.dart';
 import '../../widgets/send_recipient_resolver.dart';
 import '../../widgets/send_review_layout.dart' show SendReviewContactRecipient;
 import 'mobile_send_scan_screen.dart';
+import '../../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 enum _SendStep { recipient, amount, review }
 
@@ -2843,7 +2845,7 @@ class _MobileSendScreenState extends ConsumerState<MobileSendScreen> {
           final affixWidth = _amountInputIsUsd
               ? _textWidth(r'$', usdPrefixStyle, textScaler: textScaler) +
                     AppSpacing.xs
-              : _textWidth('ZEC', amountUnitStyle, textScaler: textScaler) +
+              : _textWidth(kZcashDefaultCurrencyTicker, amountUnitStyle, textScaler: textScaler) +
                     AppSpacing.xs;
           final inputWidth = _amountInputWidth(
             activeText,
@@ -2908,7 +2910,7 @@ class _MobileSendScreenState extends ConsumerState<MobileSendScreen> {
               ),
               if (!_amountInputIsUsd) ...[
                 const SizedBox(width: AppSpacing.xs),
-                Text('ZEC', style: amountUnitStyle),
+                Text(kZcashDefaultCurrencyTicker, style: amountUnitStyle),
               ],
             ],
           );

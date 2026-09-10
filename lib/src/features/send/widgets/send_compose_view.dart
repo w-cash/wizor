@@ -5,6 +5,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/amount_price_loading_bar.dart';
 import '../../../core/widgets/app_icon.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 /// Recipient address type used to choose the leading icon.
 ///
@@ -300,7 +302,7 @@ class SendComposeView extends StatelessWidget {
       leading: AppIcon(amountIconName, size: 20, color: amountIconColor),
       inlinePrefixText: amountInputIsUsd ? r'$' : null,
       inlinePrefixStyle: amountAffixStyle,
-      inlineSuffixText: amountInputIsUsd ? null : 'ZEC',
+      inlineSuffixText: amountInputIsUsd ? null : kZcashDefaultCurrencyTicker,
       inlineSuffixStyle: amountAffixStyle,
       showClearButton: true,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),

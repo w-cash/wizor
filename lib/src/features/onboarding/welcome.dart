@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout/app_layout.dart';
+import '../../core/config/network_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_icon.dart';
@@ -460,17 +461,21 @@ class _WelcomeButtonsWrap extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const _WalletButtonsStack(),
-        const SizedBox(height: AppSpacing.md),
-        const _OrDivider(),
-        const SizedBox(height: AppSpacing.md),
-        AppButton(
-          key: const ValueKey('welcome_connect_keystone_button'),
-          onPressed: () => context.go('/onboarding/keystone'),
-          variant: AppButtonVariant.ghost,
-          minWidth: _welcomeActionWidth,
-          leading: const AppIcon(AppIcons.qrCodeFill, size: 18),
-          child: const Text('Connect Keystone'),
-        ),
+        // Keystone firmware signs Zcash-domain sighashes, so a wcash build
+        // offers no hardware onboarding until the device supports Wcash.
+        if (!kWcashChain) ...[
+          const SizedBox(height: AppSpacing.md),
+          const _OrDivider(),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            key: const ValueKey('welcome_connect_keystone_button'),
+            onPressed: () => context.go('/onboarding/keystone'),
+            variant: AppButtonVariant.ghost,
+            minWidth: _welcomeActionWidth,
+            leading: const AppIcon(AppIcons.qrCodeFill, size: 18),
+            child: const Text('Connect Keystone'),
+          ),
+        ],
       ],
     );
   }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/voting/voting_poll_ordering.dart';
+import '../../core/config/network_config.dart';
 
 import '../../services/voting/resolved_voting_config_extensions.dart';
 import '../../services/voting/voting_models.dart';
@@ -22,6 +23,8 @@ import 'voting_share_tracking_registry_provider.dart';
 /// Only cached data is observed here. In particular, never watch the poll-list,
 /// eligibility, session, PIR, or recovery providers from Home.
 final votingHomeEntryVisibleProvider = Provider<bool>((ref) {
+  // Coinholder voting is a Zcash program; a wcash build never surfaces it.
+  if (kWcashChain) return false;
   ref.watch(votingHomeCacheProvider);
   final account = ref.watch(
     accountProvider.select((s) => s.value?.activeAccountUuid),

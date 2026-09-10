@@ -31,6 +31,8 @@ import '../../../../core/zcash/zip321_payment_request_builder.dart';
 import 'request_amount_formatters.dart';
 import 'request_amount_model.dart';
 import 'request_qr_surface.dart';
+import '../../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 /// Width of the request modal.
 ///
@@ -395,7 +397,7 @@ class RequestAmountField extends StatelessWidget {
           ),
           inlinePrefixText: request.amountInputIsUsd ? r'$' : null,
           inlinePrefixStyle: affixStyle,
-          inlineSuffixText: request.amountInputIsUsd ? null : 'ZEC',
+          inlineSuffixText: request.amountInputIsUsd ? null : kZcashDefaultCurrencyTicker,
           inlineSuffixStyle: affixStyle,
           showClearButton: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),

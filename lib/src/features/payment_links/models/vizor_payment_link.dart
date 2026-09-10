@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:characters/characters.dart';
 
 import '../../../core/formatting/zec_amount.dart';
+import '../../../core/config/network_config.dart';
 import '../../../core/navigation/vizor_deep_link.dart';
 
 const kPaymentLinkRegtestEnabledEnvKey = 'VIZOR_PAYMENT_LINK_REGTEST_ENABLED';
@@ -175,6 +176,9 @@ class VizorPaymentLink {
   final PaymentLinkPresentation? presentation;
 
   static bool supportsNetwork(String network) {
+    // Payment links are a Zcash mainnet product (link.vizor.cash claim
+    // infrastructure); a wcash build never creates or claims them.
+    if (kWcashChain) return false;
     final normalizedNetwork = network.trim();
     return normalizedNetwork == 'main' ||
         (kPaymentLinkRegtestEnabled && normalizedNetwork == 'regtest');

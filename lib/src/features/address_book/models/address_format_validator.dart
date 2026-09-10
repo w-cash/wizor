@@ -188,8 +188,14 @@ AddressFormatFinding? _nearFinding(String value) {
 
 bool _isZcashAddress(String value, ZcashNetwork net) {
   final lower = value.toLowerCase();
-  // Bech32(m): unified + sapling + TEX addresses for this network only.
-  final bechPrefixes = [net.uaPrefix, '${net.saplingPrefix}1', net.texPrefix];
+  // Bech32(m): unified + TEX addresses for this network only. Sapling is a
+  // valid recipient kind only on chains that support the pool (Wcash only
+  // reserves its Sapling namespace and rejects such recipients).
+  final bechPrefixes = [
+    net.uaPrefix,
+    if (net.supportsSaplingRecipients) '${net.saplingPrefix}1',
+    net.texPrefix,
+  ];
   for (final prefix in bechPrefixes) {
     if (lower.startsWith(prefix)) {
       return value.length >= 8 && _bech32Body.hasMatch(lower);
@@ -198,11 +204,7 @@ bool _isZcashAddress(String value, ZcashNetwork net) {
   // Transparent base58check: P2PKH + P2SH prefixes for this network only.
   // Full Base58Check verification — a real t-addr decodes to a 22-byte
   // payload (2-byte version prefix + 20-byte hash) with a valid checksum.
-  final tPrefixes = switch (net) {
-    ZcashNetwork.mainnet => const ['t1', 't3'],
-    ZcashNetwork.testnet || ZcashNetwork.regtest => const ['tm', 't2'],
-  };
-  for (final prefix in tPrefixes) {
+  for (final prefix in net.tAddrPrefixes) {
     if (value.startsWith(prefix)) {
       final payload = base58CheckDecode(value);
       return payload != null && payload.length == 22;

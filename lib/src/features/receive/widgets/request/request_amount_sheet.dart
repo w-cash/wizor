@@ -27,6 +27,8 @@ import 'request_amount_card.dart'
 import 'request_amount_formatters.dart';
 import 'request_amount_model.dart';
 import 'request_qr_surface.dart';
+import '../../../../core/config/network_config.dart'
+    show kZcashDefaultCurrencyTicker;
 
 /// The serif amount metrics from the mobile send amount step, mirrored so the
 /// two "type an amount" screens are the same screen to a user's eye.
@@ -305,7 +307,7 @@ class _SerifAmountDisplay extends StatelessWidget {
         ),
         if (!request.amountInputIsUsd) ...[
           const SizedBox(width: AppSpacing.xs),
-          Text('ZEC', style: unitStyle),
+          Text(kZcashDefaultCurrencyTicker, style: unitStyle),
         ],
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/mobile/mobile_top_nav.dart';
+import '../../../core/config/network_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_icon.dart';
 
@@ -91,15 +92,19 @@ class MobileMethodSelectionScreen extends StatelessWidget {
                           'assets/illustrations/method_link_desktop_card_bg.png',
                       onTap: () => context.push('/onboarding/link-desktop'),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _MethodCard(
-                      buttonKey: const ValueKey('mobile_welcome_keystone'),
-                      iconName: AppIcons.qr,
-                      label: 'Connect Keystone',
-                      illustration:
-                          'assets/illustrations/method_keystone_card_bg.png',
-                      onTap: () => context.push('/onboarding/keystone'),
-                    ),
+                    // Keystone firmware signs Zcash-domain sighashes, so a
+                    // wcash build offers no hardware onboarding.
+                    if (!kWcashChain) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _MethodCard(
+                        buttonKey: const ValueKey('mobile_welcome_keystone'),
+                        iconName: AppIcons.qr,
+                        label: 'Connect Keystone',
+                        illustration:
+                            'assets/illustrations/method_keystone_card_bg.png',
+                        onTap: () => context.push('/onboarding/keystone'),
+                      ),
+                    ],
                   ],
                 ),
               ),

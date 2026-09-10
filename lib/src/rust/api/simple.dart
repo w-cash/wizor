@@ -9,6 +9,12 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 String greet({required String name}) =>
     RustLib.instance.api.crateApiSimpleGreet(name: name);
 
+/// Whether this Rust library was compiled for the Wcash chain
+/// (cargo feature `wcash`). App bootstrap asserts this matches the Dart
+/// `VIZOR_CHAIN` define so a mixed-flavor build fails fast instead of
+/// signing transactions in the wrong chain domain.
+bool isWcashBuild() => RustLib.instance.api.crateApiSimpleIsWcashBuild();
+
 /// Keep wallet consensus parameters aligned with the local Ironwood regtest
 /// node. Production builds leave the default activation-at-height-1 behavior.
 Future<void> configureRegtestIronwoodActivationHeight({required int height}) =>
