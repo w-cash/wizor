@@ -20,6 +20,17 @@ import '../security/software_wallet_secret.dart';
 import '../../rust/api/secret.dart' as rust_secret;
 
 const kWalletDbNameKey = 'zcash_wallet_db_name';
+
+/// Local ad-hoc-signed macOS dev builds carry no `application-identifier`
+/// entitlement (that entitlement requires a provisioning profile), so the
+/// data-protection keychain rejects every write with errSecMissingEntitlement
+/// (-34018). Pass `--dart-define=VIZOR_MACOS_LEGACY_KEYCHAIN=true` with such
+/// builds to fall back to the legacy file-based keychain. Team-signed builds
+/// must keep the default.
+const kVizorMacosLegacyKeychain = bool.fromEnvironment(
+  'VIZOR_MACOS_LEGACY_KEYCHAIN',
+  defaultValue: false,
+);
 const kThemeModeKey = 'zcash_theme_mode';
 const kPrivacyModeEnabledKey = 'zcash_privacy_mode_enabled';
 const kSyncKeepAwakeEnabledKey = 'zcash_sync_keep_awake_enabled';
@@ -119,7 +130,7 @@ class AppSecureStore {
       mOptions: MacOsOptions(
         accountName: service,
         accessibility: KeychainAccessibility.first_unlock,
-        usesDataProtectionKeychain: true,
+        usesDataProtectionKeychain: !kVizorMacosLegacyKeychain,
       ),
     );
   }
@@ -142,7 +153,7 @@ class AppSecureStore {
         accessibility: kDebugMode && _e2eUseFirstUnlockMnemonicKeychain
             ? KeychainAccessibility.first_unlock
             : KeychainAccessibility.unlocked,
-        usesDataProtectionKeychain: true,
+        usesDataProtectionKeychain: !kVizorMacosLegacyKeychain,
       ),
     );
   }

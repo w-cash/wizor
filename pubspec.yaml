@@ -95,6 +95,11 @@ dependency_overrides:
   freezed_annotation: ^3.1.0
   flutter_secure_storage_windows:
     path: third_party/flutter_secure_storage_windows
+  # Patched upstream 0.2.0: honors MacOsOptions.usesDataProtectionKeychain
+  # (upstream reads a misspelled option key and silently forces the
+  # data-protection keychain on). See the Vizor patch comment in the plugin.
+  flutter_secure_storage_darwin:
+    path: third_party/flutter_secure_storage_darwin
   json_annotation: ^4.11.0
   json_serializable: ^6.13.1
 
