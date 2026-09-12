@@ -265,3 +265,16 @@ fn wcash_regtest_send_between_wallets() {
         "sender history should record the outbound transfer"
     );
 }
+
+/// Probes the public Wcash engineering Testnet lightwalletd front through the
+/// wallet's own gRPC stack (tonic + TLS + webpki roots).
+#[test]
+#[ignore = "requires internet access to wallet-testnet.wcashexplorer.com"]
+fn wcash_public_testnet_tip_is_reachable() {
+    let url = std::env::var("WCASH_E2E_TESTNET_URL")
+        .unwrap_or_else(|_| "https://wallet-testnet.wcashexplorer.com:443".to_string());
+    let height = wallet_api::get_latest_block_height(url.clone(), "test".into())
+        .expect("the public Wcash testnet lightwalletd must answer GetLatestBlock");
+    println!("public wcash testnet tip via {url}: {height}");
+    assert!(height > 0, "testnet tip should be past genesis");
+}

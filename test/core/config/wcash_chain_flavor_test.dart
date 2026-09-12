@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zcash_wallet/src/core/config/network_config.dart';
+import 'package:zcash_wallet/src/core/config/zcash_explorer.dart';
 import 'package:zcash_wallet/src/features/address_book/models/address_book_contact.dart';
 import 'package:zcash_wallet/src/features/address_book/models/address_format_validator.dart';
 
@@ -47,6 +48,17 @@ void main() {
     expect(normalizeZcashNetworkName('garbage'), 'test');
     expect(normalizeZcashNetworkName('regtest'), 'regtest');
     expect(kZcashDefaultNetworkName, isNot('main'));
+  });
+
+  test('wcash testnet defaults to the public wcashexplorer endpoints', () {
+    expect(
+      ZcashNetwork.testnet.lightwalletdUrl,
+      'https://wallet-testnet.wcashexplorer.com:443',
+    );
+    // Regtest keeps the local node default from the E2E harness.
+    expect(ZcashNetwork.regtest.lightwalletdUrl, 'http://127.0.0.1:58234');
+    expect(defaultZcashExplorerHost('test'), 'wcashexplorer.com');
+    expect(kDefaultZcashExplorerLabel, 'Wcash Explorer');
   });
 
   test('wcash secure stores never share a namespace with Zcash stores', () {

@@ -96,18 +96,25 @@ enum ZcashNetwork {
         };
 
   int get defaultPort => kWcashChain
-      ? 58234
+      ? switch (this) {
+          testnet => 443,
+          _ => 58234,
+        }
       : switch (this) {
           mainnet => 9067,
           testnet => 18232,
           regtest => 9067,
         };
 
-  /// Wcash has no public node infrastructure yet (the engineering Testnet is
-  /// not deployed), so both testing networks default to a local node's
-  /// lightwalletd gRPC listener (`rust/tests/wcash-regtest-node.toml`).
+  /// The Wcash engineering Testnet is served by the public
+  /// wcashexplorer.com lightwalletd front (nginx + TLS in front of a
+  /// wcash-zebrad); regtest defaults to a local node's gRPC listener
+  /// (`rust/tests/wcash-regtest-node.toml`). Wcash mainnet does not exist.
   String get lightwalletdHost => kWcashChain
-      ? '127.0.0.1'
+      ? switch (this) {
+          testnet => 'wallet-testnet.wcashexplorer.com',
+          _ => '127.0.0.1',
+        }
       : switch (this) {
           mainnet => 'us.zec.stardust.rest',
           testnet => 'lightwalletd.testnet.electriccoin.co',
@@ -115,7 +122,10 @@ enum ZcashNetwork {
         };
 
   int get lightwalletdPort => kWcashChain
-      ? 58234
+      ? switch (this) {
+          testnet => 443,
+          _ => 58234,
+        }
       : switch (this) {
           mainnet => 443,
           testnet => 9067,
@@ -135,6 +145,7 @@ enum ZcashNetwork {
         };
 
   String get lightwalletdUrl => switch (this) {
+    testnet when kWcashChain => 'https://$lightwalletdHost:$lightwalletdPort',
     _ when kWcashChain => 'http://$lightwalletdHost:$lightwalletdPort',
     regtest => 'http://$lightwalletdHost:$lightwalletdPort',
     _ => 'https://$lightwalletdHost:$lightwalletdPort',

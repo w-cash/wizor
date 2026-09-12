@@ -6,7 +6,9 @@ enum ZcashExplorerTxidOrder { protocol, display }
 
 typedef ZcashExplorerLauncher = Future<bool> Function(Uri uri);
 
-const kDefaultZcashExplorerLabel = 'CipherScan';
+const kDefaultZcashExplorerLabel = kWcashChain
+    ? 'Wcash Explorer'
+    : 'CipherScan';
 
 const kZcashExplorerPrivacyCopy =
     'Transaction links open in this explorer. Use CipherScan or another site '
@@ -24,6 +26,7 @@ final _txidPlaceholderPattern = RegExp(
 );
 
 String defaultZcashExplorerHost(String networkName) {
+  if (kWcashChain) return 'wcashexplorer.com';
   final network = zcashNetworkFromName(networkName);
   return switch (network) {
     ZcashNetwork.mainnet => 'cipherscan.app',
