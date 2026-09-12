@@ -278,3 +278,31 @@ fn wcash_public_testnet_tip_is_reachable() {
     println!("public wcash testnet tip via {url}: {height}");
     assert!(height > 0, "testnet tip should be past genesis");
 }
+
+/// Full sync against the public Wcash engineering Testnet front. Read-only:
+/// imports the public test mnemonic into a temp DB and scans the chain.
+#[test]
+#[ignore = "requires internet access to wallet-testnet.wcashexplorer.com"]
+fn wcash_public_testnet_sync() {
+    let url = std::env::var("WCASH_E2E_TESTNET_URL")
+        .unwrap_or_else(|_| "https://wallet-testnet.wcashexplorer.com:443".to_string());
+    let tempdir = tempfile::tempdir().expect("tempdir");
+    let db_path = tempdir.path().join("zcash_wallet.db");
+    let wallet = wallet_api::import_wallet(
+        TEST_MNEMONIC.into(),
+        String::new(),
+        Some(1),
+        "test".into(),
+        path_str(&db_path),
+        Some("Wcash Testnet".into()),
+    )
+    .expect("import_wallet");
+    println!("testnet ua={}", wallet.unified_address);
+
+    sync_api::run_full_sync_blocking(path_str(&db_path), url.clone(), "test".into(), 1)
+        .expect("run_full_sync_blocking against the public testnet");
+
+    let balance = sync_api::get_balance(path_str(&db_path), "test".into(), wallet.account_uuid)
+        .expect("get_balance");
+    println!("testnet balance total={} ironwood={}", balance.total, balance.ironwood);
+}
